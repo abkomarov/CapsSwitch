@@ -1,10 +1,10 @@
 ;
 Menu, tray, NoStandard
-if !IsUsedInModeEx
-  Menu, tray, add, Enable Autorun, MenuHandler1
-Menu, tray, add, Disable Autorun, MenuHandler2
-Menu, tray, add, Caps on/off, MenuHandler4
-Menu, tray, add, Disable/Enable, MenuHandler5
+;if !IsUsedInModeEx
+  Menu, tray, add, Enable Autorun, MenuHandler_EnableAutorunBase
+Menu, tray, add, Disable Autorun, MenuHandler_DisableAutorun
+Menu, tray, add, Caps on/off, MenuHandler_ToggleCaps
+Menu, tray, add, Disable/Enable, MenuHandler_SuspendScript
 Menu, tray, add, Exit, Exit
 Menu, tray, Default, Exit
 
@@ -19,6 +19,7 @@ DllCall("ActivateKeyboardLayout", "Ptr", hkl, "UInt", 0)
 ; По умолчанию если хоткей срабатывает пока предыдущий ещё обрабатывается — новое нажатие теряется.
 ; С On — нажатие буферизируется и выполнится сразу после завершения текущего потока.
 ; При быстрой печати это критично: без буферизации при одновременных нажатиях нескольких клавиш часть просто не попадёт в AllKeys.
+;SetKeyDelay, -1, -1
 SetCapsLockState, AlwaysOff
 RegRead, LangToggleKey, HKEY_CURRENT_USER, Keyboard Layout\Toggle, Language Hotkey
 
@@ -101,20 +102,20 @@ Exit:
 ExitApp
 return
 
-MenuHandler1:
+MenuHandler_EnableAutorunBase:
 shortpath := A_ScriptFullPath
 RegWrite, REG_SZ,HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, CapsSwitchHandler, %shortpath%
 return
 
-MenuHandler2:
+MenuHandler_DisableAutorun:
 RegDelete, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Run, CapsSwitchHandler
 return
 
-MenuHandler4:
+MenuHandler_ToggleCaps:
 SendInput {Capslock}
 return
 
-MenuHandler5:
+MenuHandler_SuspendScript:
 Suspend
 return
 
@@ -132,7 +133,9 @@ if (A_TickCount - HotkeyTick < 400)
   ;SendMessage, 0x50, 2, 0,, A ; 0x50 is WM_INPUTLANGCHANGEREQUEST
   ;SendInput {Control Down}{Shift}{Control Up}
   ;Send {Control}
+
   SendInput _{BS}%AllBS%%AllKeys%
+
   ;BlockInput Off
   HotkeyTick := 0
   return
